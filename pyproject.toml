@@ -1,0 +1,12 @@
+[project]
+name = "humanforyou"
+version = "1.0.0"
+description = "Employee Attrition Prediction — HumanForYou (CESI A5 ML Project)"
+requires-python = ">=3.10"
+readme = "README.md"
+
+[project.optional-dependencies]
+dev = [
+    "jupyter>=1.0",
+    "ipykernel>=6.0",
+]
