@@ -1,5 +1,5 @@
 """
-Production validation pipeline — 24 features.
+Production validation pipeline — 23 features.
 Runs the full pipeline: preprocess, benchmark 9 models, tune top 3,
 calibrate threshold via CV, evaluate on test set.
 """
@@ -15,12 +15,11 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from sklearn.model_selection import (
-    train_test_split, StratifiedKFold, cross_val_predict, cross_val_score,
+    train_test_split, StratifiedKFold, cross_val_predict,
     GridSearchCV, RandomizedSearchCV
 )
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import KNNImputer
-from sklearn.feature_selection import VarianceThreshold
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import (
     RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
@@ -43,7 +42,7 @@ OUTPUT_DIR = PROJECT_ROOT / "outputs"
 # 1. Rebuild corrected dataset
 # =====================================================================
 print("=" * 70)
-print("PRODUCTION VALIDATION — 24 Features")
+print("PRODUCTION VALIDATION — 23 Features")
 print("=" * 70)
 
 print("\n[1/5] Building dataset...")
@@ -58,7 +57,7 @@ emp_ids = in_time.iloc[:, 0].astype(int)
 in_dates = in_time.iloc[:, 1:]
 out_dates = out_time.iloc[:, 1:]
 date_cols = [c for c in in_dates.columns
-             if pd.to_datetime(c, errors="coerce") is not pd.NaT
+             if pd.notna(pd.to_datetime(c, errors="coerce"))
              and pd.to_datetime(c, errors="coerce") <= pd.Timestamp("2015-06-30")]
 in_d = in_dates[date_cols].apply(pd.to_datetime, errors="coerce")
 out_d = out_dates[date_cols].apply(pd.to_datetime, errors="coerce")
@@ -94,9 +93,10 @@ df["BusinessTravel"] = df["BusinessTravel"].map(
 cat_cols = df.select_dtypes(include="object").columns.tolist()
 df = pd.get_dummies(df, columns=cat_cols, drop_first=True, dtype=int)
 
-# Feature whitelist (24)
+# Feature whitelist (23 — matches NB03 pipeline after correlation filter)
+# avg_working_hours excluded: data leakage risk (badge data spans full 2015)
 FINAL_FEATURES = [
-    "avg_working_hours", "late_arrival_rate",
+    "late_arrival_rate", "absence_rate",
     "Age", "TotalWorkingYears", "YearsAtCompany", "MonthlyIncome",
     "YearsWithCurrManager", "NumCompaniesWorked", "DistanceFromHome",
     "PercentSalaryHike", "TrainingTimesLastYear", "YearsSinceLastPromotion",
@@ -136,9 +136,9 @@ X_test_s = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns, index=
 joblib.dump(scaler, OUTPUT_DIR / "scaler.joblib")
 
 # Save
-X_train_s.to_csv(OUTPUT_DIR / "X_train_no_smote.csv", index=False)
+X_train_s.to_csv(OUTPUT_DIR / "X_train.csv", index=False)
 X_test_s.to_csv(OUTPUT_DIR / "X_test.csv", index=False)
-y_train.to_csv(OUTPUT_DIR / "y_train_no_smote.csv", index=False)
+y_train.to_csv(OUTPUT_DIR / "y_train.csv", index=False)
 y_test.to_csv(OUTPUT_DIR / "y_test.csv", index=False)
 pd.Series(list(X_train.columns)).to_csv(OUTPUT_DIR / "feature_names.csv", index=False, header=False)
 

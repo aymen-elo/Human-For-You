@@ -27,7 +27,7 @@ emp_ids = in_time.iloc[:, 0].astype(int)
 in_dates = in_time.iloc[:, 1:]
 out_dates = out_time.iloc[:, 1:]
 date_cols = [c for c in in_dates.columns
-             if pd.to_datetime(c, errors="coerce") is not pd.NaT
+             if pd.notna(pd.to_datetime(c, errors="coerce"))
              and pd.to_datetime(c, errors="coerce") <= pd.Timestamp("2015-06-30")]
 in_d = in_dates[date_cols].apply(pd.to_datetime, errors="coerce")
 out_d = out_dates[date_cols].apply(pd.to_datetime, errors="coerce")

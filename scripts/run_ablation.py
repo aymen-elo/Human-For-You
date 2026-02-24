@@ -6,7 +6,6 @@ import numpy as np
 import warnings
 import time
 import json
-import os
 from pathlib import Path
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -19,7 +18,7 @@ from sklearn.feature_selection import VarianceThreshold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     f1_score, precision_score, recall_score, roc_auc_score,
-    average_precision_score, classification_report
+    average_precision_score
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -50,7 +49,7 @@ def process_badge(df_in, df_out, cutoff=None):
         for c in in_dates.columns:
             try:
                 dt = pd.to_datetime(c, errors="coerce")
-                if dt is not pd.NaT and dt <= cutoff:
+                if pd.notna(dt) and dt <= cutoff:
                     date_cols.append(c)
             except Exception:
                 pass
@@ -159,13 +158,23 @@ def preprocess(df, feature_subset=None):
         X_train = X_train.drop(columns=low_var)
         X_test = X_test.drop(columns=low_var)
 
-    # Correlation filter (0.90)
+    # Correlation filter (0.90) — keep the more important feature from each pair
     corr = X_train.corr().abs()
     tri = corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool))
-    high_corr = [c for c in tri.columns if any(tri[c] > 0.90)]
-    if high_corr:
-        X_train = X_train.drop(columns=high_corr)
-        X_test = X_test.drop(columns=high_corr)
+    rf_tmp = RandomForestClassifier(n_estimators=100, class_weight="balanced",
+                                    random_state=42, n_jobs=-1)
+    rf_tmp.fit(X_train, y_train)
+    gini = pd.Series(rf_tmp.feature_importances_, index=X_train.columns)
+    to_drop = set()
+    for col in tri.columns:
+        for row in tri.index[tri[col] > 0.90]:
+            if gini[col] >= gini[row]:
+                to_drop.add(row)
+            else:
+                to_drop.add(col)
+    if to_drop:
+        X_train = X_train.drop(columns=list(to_drop))
+        X_test = X_test.drop(columns=list(to_drop))
 
     # Scale
     sc = StandardScaler()

@@ -1,134 +1,180 @@
-# HumanForYou — Employee Attrition Prediction
+# HumanForYou -- Prediction d'attrition des employes
 
-Projet de Machine Learning visant a predire le depart volontaire des employes de l'entreprise pharmaceutique HumanForYou (~4000 employes, ~15% de turnover annuel).
+Projet de Machine Learning visant a predire le depart volontaire des employes de l'entreprise pharmaceutique HumanForYou (~4000 employes, ~16% d'attrition annuelle).
 
-## Contexte
+**Modele final** : XGBoost, 23 features, seuil optimise a 0.46 par validation croisee.  
+**CV-F1 : 0.94** | Test-F1 : 0.99 (voir [Limites connues](#limites-connues) pour l'interpretation).
 
-HumanForYou fait face a un taux de rotation eleve qui impacte :
-- La **continuite des projets** (retards, reputation client)
-- Les **couts RH** (recrutement, formation des nouveaux arrivants)
-- La **productivite** (temps d'integration)
+---
 
-L'objectif est d'identifier les facteurs cles de l'attrition et de construire un modele predictif pour permettre des actions de retention ciblees.
+## Quickstart (3 commandes)
+
+```bash
+# 1. Cloner et entrer dans le projet
+git clone <url-du-repo> && cd HumanForYou
+
+# 2. Installer l'environnement
+# Windows :
+setup.bat
+# Linux / macOS :
+chmod +x setup.sh && ./setup.sh
+
+# 3. Lancer Jupyter et executer les notebooks dans l'ordre (00 -> 05)
+jupyter notebook notebooks/
+```
+
+**Ou manuellement :**
+
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate | Linux: source .venv/bin/activate
+pip install -r requirements.txt
+python -m ipykernel install --user --name humanforyou --display-name "Python (HumanForYou)"
+jupyter notebook notebooks/
+```
+
+---
 
 ## Structure du projet
 
 ```
 HumanForYou/
-├── data/
-│   ├── raw/                          # Donnees brutes (CSV)
-│   │   ├── general_data.csv          # Donnees RH (age, salaire, poste...)
-│   │   ├── employee_survey_data.csv  # Enquete satisfaction employes
-│   │   ├── manager_survey_data.csv   # Evaluation par les managers
-│   │   ├── in_time.csv              # Horaires d'arrivee (badge)
-│   │   └── out_time.csv             # Horaires de depart (badge)
-│   └── README.md                     # Description des variables
-├── notebooks/
-│   ├── 00_Environment_Check.ipynb         # Verification de l'environnement
-│   ├── 01_Data_Validation_Pipeline.ipynb  # Validation, nettoyage, fusion
-│   ├── 02_EDA_Explorer.ipynb              # Analyse exploratoire
-│   ├── 03_Feature_Engineering.ipynb       # Feature engineering, encoding, SMOTE
-│   ├── 04_Model_Benchmark.ipynb           # Comparaison de 9 algorithmes
-│   └── 05_Model_Optimization.ipynb        # Tuning, SHAP, equite, recommandations
-├── outputs/                          # Resultats generes (non versionnes)
-├── requirements.txt                  # Dependances Python
-├── setup.sh                          # Script d'installation (Linux/macOS)
-├── setup.bat                         # Script d'installation (Windows)
-├── .gitignore
-└── README.md
+|-- data/
+|   |-- raw/                              # Donnees brutes (immuables)
+|   |   |-- general_data.csv              # Donnees RH (age, salaire, poste...)
+|   |   |-- employee_survey_data.csv      # Enquete satisfaction employes
+|   |   |-- manager_survey_data.csv       # Evaluation manageriale
+|   |   |-- in_time.csv                   # Horaires d'entree (badge)
+|   |   +-- out_time.csv                  # Horaires de sortie (badge)
+|   +-- README.md                         # Dictionnaire des variables
+|-- notebooks/                            # Pipeline sequentiel (00 -> 05)
+|   |-- 00_Environment_Check.ipynb
+|   |-- 01_Data_Validation_Pipeline.ipynb
+|   |-- 02_EDA_Explorer.ipynb
+|   |-- 03_Feature_Engineering.ipynb
+|   |-- 04_Model_Benchmark.ipynb
+|   +-- 05_Model_Optimization.ipynb
+|-- scripts/                              # Scripts autonomes (reproductibilite)
+|   |-- feature_selection.py              # Selection hybride de features
+|   |-- run_ablation.py                   # Tests d'ablation (5 scenarios)
+|   +-- run_production_validation.py      # Pipeline de production complet
+|-- outputs/                              # Artefacts generes (non versionnes)
+|-- requirements.txt
+|-- setup.bat / setup.sh
++-- README.md
 ```
 
-## Installation rapide
-
-### Prerequis
-
-- Python 3.10 ou superieur
-- pip
-
-### Setup avec environnement virtuel
-
-**Windows :**
-```bash
-setup.bat
-```
-
-**Linux / macOS :**
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-**Ou manuellement :**
-```bash
-python -m venv .venv
-
-# Activation
-# Windows:
-.venv\Scripts\activate
-# Linux/macOS:
-source .venv/bin/activate
-
-# Installation des dependances
-pip install -r requirements.txt
-
-# Enregistrement du kernel Jupyter
-python -m ipykernel install --user --name humanforyou --display-name "Python (HumanForYou)"
-```
+---
 
 ## Pipeline d'analyse
 
 Les notebooks doivent etre executes **dans l'ordre** :
 
-| # | Notebook | Description |
-|---|----------|-------------|
+| #  | Notebook | Description |
+|----|----------|-------------|
 | 00 | Environment Check | Verification des dependances et des fichiers de donnees |
-| 01 | Data Validation Pipeline | Validation des schemas, audit qualite, fusion des 4 sources, extraction de features badge |
-| 02 | EDA Explorer | Distributions, tests statistiques (Mann-Whitney, Chi2), correlations, analyse d'equite |
-| 03 | Feature Engineering | Imputation, creation de features, encodage, scaling, SMOTE |
-| 04 | Model Benchmark | Comparaison de 9 modeles (LR, RF, XGB, SVM, KNN, DT, AdaBoost, GB, MLP) |
-| 05 | Model Optimization | GridSearch/RandomizedSearch, calibration de seuil, SHAP, analyse d'equite, recommandations |
+| 01 | Data Validation Pipeline | Validation des schemas, audit qualite, fusion des 4 sources, extraction de 3 features badge (H1 2015) |
+| 02 | EDA Explorer | Distributions, tests statistiques (Mann-Whitney, Chi2), correlations, analyse d'equite initiale |
+| 03 | Feature Engineering | Feature engineering, encodage, imputation (KNNImputer post-split), selection de 23 features, scaling |
+| 04 | Model Benchmark | Comparaison de 9 algorithmes avec `class_weight="balanced"`, courbes ROC/PR, validation croisee |
+| 05 | Model Optimization | Tuning, calibration de seuil par CV, SHAP, LIME, equite multi-metriques, robustesse, integrite du modele |
+
+Les scripts dans `scripts/` reproduisent le pipeline independamment des notebooks :
+- `feature_selection.py` : selection hybride (correlation + Gini) avec audit complet
+- `run_ablation.py` : 5 scenarios d'ablation pour quantifier l'apport de chaque groupe de features
+- `run_production_validation.py` : pipeline de bout en bout (preprocessing -> benchmark -> tuning -> export)
+
+---
+
+## Choix techniques
+
+| Decision | Justification |
+|----------|---------------|
+| **class_weight="balanced" au lieu de SMOTE** | Produit des resultats de CV plus stables et evite l'inflation artificielle du train set. |
+| **Calibration du seuil par CV** (cross_val_predict) | Evite le data leakage : le seuil est optimise sur des predictions out-of-fold, pas sur le test set. |
+| **Badge restreint a H1 2015** (jan-jun) | Evite la contamination temporelle : les departs ont lieu en 2016, le badge H2 pourrait refleter un desengagement pre-depart. |
+| **XGBoost comme modele final** | Meilleur CV-F1 apres tuning (0.94 vs 0.93 pour RF). Meilleur controle de l'imbalance via scale_pos_weight. |
+| **23 features (whitelist)** | Validee par tests d'ablation : la reduction de 41 a 23 features ne degrade le CV-F1 que de 0.004. |
+| **KNNImputer post-split** | Imputation fit sur le train uniquement, evite le data leakage. |
+
+---
+
+## Considerations ethiques (ALTAI / AI Act)
+
+Le notebook 05 integre 14 sections couvrant :
+- **Equite** : Disparate Impact, Equal Opportunity, Predictive Parity sur genre, statut marital, age
+- **Mitigation du biais** : seuils differencies par statut marital (calibres par CV)
+- **Detection de proxies** : correlation des top features avec les variables sensibles
+- **Explainabilite** : SHAP (global) + LIME (local, top 5 employes a risque)
+- **Robustesse** : injection de bruit gaussien sur features continues (5 niveaux, 10 seeds)
+- **Integrite** : hash SHA-256 du modele, metadata completes, classification AI Act
+- **RGPD** : section de minimisation des donnees prete a activer
+
+---
+
+## Limites connues
+
+1. **Performance elevee (F1 = 0.99 sur test)** : Le dataset source (IBM HR Analytics via Kaggle) est semi-synthetique. Les frontieres de decision sont artificiellement nettes. En production reelle, on anticipe F1 = 0.50-0.70 (benchmark industrie). Les tests d'ablation sur 5 scenarios et 10 random seeds prouvent qu'il n'y a pas de data leakage.
+
+2. **Biais MaritalStatus** : Le Disparate Impact pour le statut marital est < 0.80 (regle des 4/5). La mitigation par seuils differencies est tentee mais peut echouer. Remediation recommandee : suppression des features MaritalStatus ou utilisation de fairlearn.
+
+3. **Donnees mono-annuelles** : Le modele est entraine sur 2015 uniquement. La generalisation temporelle n'est pas verifiee.
+
+---
 
 ## Donnees
 
-Les donnees proviennent du dataset [HR Analytics Case Study](https://www.kaggle.com/vjchoudhary7/hr-analytics-case-study) sur Kaggle. Elles ont ete anonymisees.
+Source : [HR Analytics Case Study](https://www.kaggle.com/vjchoudhary7/hr-analytics-case-study) (Kaggle)
 
-- **general_data.csv** : 24 variables RH par employe
-- **employee_survey_data.csv** : satisfaction (environnement, travail, equilibre)
-- **manager_survey_data.csv** : evaluation manageriale (implication, performance)
-- **in_time.csv / out_time.csv** : horaires de badge sur l'annee 2015
+| Fichier | Description | Taille |
+|---------|-------------|--------|
+| general_data.csv | 24 variables RH par employe (4410 lignes) | 0.5 MB |
+| employee_survey_data.csv | Satisfaction (environnement, travail, equilibre) | < 0.1 MB |
+| manager_survey_data.csv | Evaluation manageriale (implication, performance) | < 0.1 MB |
+| in_time.csv / out_time.csv | Horaires de badge sur 2015 | ~22 MB chacun |
+
+Voir `data/README.md` pour le dictionnaire complet des variables.
+
+---
 
 ## Algorithmes evalues
 
-- Logistic Regression
-- Random Forest
-- Gradient Boosting
-- XGBoost
-- SVM (RBF)
-- K-Nearest Neighbors
-- Decision Tree
-- AdaBoost
-- MLP (Neural Network)
+| Algorithme | class_weight | F1 (test) | Note |
+|------------|:---:|:---:|------|
+| XGBoost | scale_pos_weight | **0.989** | Modele final retenu |
+| Random Forest | balanced | 0.989 | CV-F1 inferieur apres tuning |
+| MLP | - | 0.986 | Pas de gestion native de l'imbalance |
+| Decision Tree | balanced | 0.975 | |
+| SVM (RBF) | balanced | 0.724 | |
+| Logistic Regression | balanced | 0.573 | |
+| Gradient Boosting | - | 0.573 | Pas de class_weight natif |
+| KNN | - | 0.498 | |
+| AdaBoost | - | 0.404 | |
 
-## Metriques
+Note : les algorithmes sans `class_weight` sont desavantages dans ce benchmark (donnees desequilibrees 84/16).
 
-Le projet utilise plusieurs metriques adaptees au contexte de classification desequilibree :
-- **F1-Score** (metrique principale de selection)
-- **Recall** (prioritaire : ne pas rater un employe a risque)
-- **Precision**, **AUC-ROC**, **Accuracy**
-- **Analyse d'equite** : Disparate Impact (regle des 4/5)
-
-## Considerations ethiques
-
-Le projet integre une demarche ethique conforme aux recommandations ALTAI de la Commission Europeenne :
-- Analyse du biais sur les variables sensibles (genre, statut marital, age)
-- Transparence via SHAP (explicabilite des predictions)
-- Supervision humaine : le modele genere des alertes, pas des decisions
+---
 
 ## Technologies
 
 - **Python 3.10+**
-- **Jupyter Notebook**
 - pandas, numpy, scipy
 - matplotlib, seaborn, plotly
-- scikit-learn, XGBoost, imbalanced-learn
-- SHAP, statsmodels
+- scikit-learn, XGBoost
+- SHAP, LIME, fairlearn
+- Jupyter Notebook
+
+---
+
+## Troubleshooting
+
+| Probleme | Solution |
+|----------|----------|
+| `ModuleNotFoundError: No module named 'xgboost'` | Executer `pip install -r requirements.txt` dans l'environnement virtuel active |
+| `FileNotFoundError: data/raw/...` | Verifier que les 5 fichiers CSV sont dans `data/raw/`. Executer NB00 pour le diagnostic. |
+| Kernel Jupyter non trouve | `python -m ipykernel install --user --name humanforyou` |
+| NB01 tres lent (parsing badge) | Normal : `in_time.csv` et `out_time.csv` font 22 MB chacun. Compter ~30s. |
+| `MemoryError` sur les fichiers badge | Fermer les autres applications. Le parsing badge necessite ~500 MB de RAM. |
+| Erreur dans NB05 section SHAP | SHAP peut etre lent sur XGBoost. Patienter ou reduire `max_display`. |
+| `ImportError: No module named 'lime'` | `pip install lime` (optionnel, NB05 section 11 uniquement) |
+| Les outputs ne sont pas generes | Les notebooks doivent etre executes dans l'ordre 00 -> 05. Chaque notebook depend des outputs du precedent. |
