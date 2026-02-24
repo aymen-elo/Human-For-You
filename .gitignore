@@ -13,6 +13,7 @@ __pycache__/
 
 # C extensions
 *.so
+.idea
 
 # Distribution / packaging
 .Python
@@ -33,6 +34,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.claude
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -213,3 +215,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Miscellaneous
+
+ctx
