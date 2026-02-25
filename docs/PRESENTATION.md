@@ -665,5 +665,3 @@ On injecte du **bruit gaussien** sur les 14 features continues (non binaires) à
 | **EU AI Act** | Réglementation européenne sur l'IA entrée en vigueur en 2024 |
 
 ---
-
-*Document généré pour le projet CESI A5 — HumanForYou*
