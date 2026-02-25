@@ -19,8 +19,7 @@ setup.bat
 # Linux / macOS :
 chmod +x setup.sh && ./setup.sh
 
-# 3. Activer l'environnement et lancer Jupyter et executer les notebooks dans l'ordre (00 -> 05)
-.venv\Scripts\activate
+# 3. Lancer Jupyter et executer les notebooks dans l'ordre (00 -> 05)
 jupyter notebook notebooks/
 ```
 
@@ -32,37 +31,6 @@ python -m venv .venv
 pip install -r requirements.txt
 python -m ipykernel install --user --name humanforyou --display-name "Python (HumanForYou)"
 jupyter notebook notebooks/
-```
-
----
-
-## Structure du projet
-
-```
-Human-For-You/
-|-- data/
-|   |-- raw/                              # Donnees brutes (immuables)
-|   |   |-- general_data.csv              # Donnees RH (age, salaire, poste...)
-|   |   |-- employee_survey_data.csv      # Enquete satisfaction employes
-|   |   |-- manager_survey_data.csv       # Evaluation manageriale
-|   |   |-- in_time.csv                   # Horaires d'entree (badge)
-|   |   +-- out_time.csv                  # Horaires de sortie (badge)
-|   +-- README.md                         # Dictionnaire des variables
-|-- notebooks/                            # Pipeline sequentiel (00 -> 05)
-|   |-- 00_Environment_Check.ipynb
-|   |-- 01_Data_Validation_Pipeline.ipynb
-|   |-- 02_EDA_Explorer.ipynb
-|   |-- 03_Feature_Engineering.ipynb
-|   |-- 04_Model_Benchmark.ipynb
-|   +-- 05_Model_Optimization.ipynb
-|-- scripts/                              # Scripts autonomes (reproductibilite)
-|   |-- feature_selection.py              # Selection hybride de features
-|   |-- run_ablation.py                   # Tests d'ablation (5 scenarios)
-|   +-- run_production_validation.py      # Pipeline de production complet
-|-- outputs/                              # Artefacts generes (non versionnes)
-|-- requirements.txt
-|-- setup.bat / setup.sh
-+-- README.md
 ```
 
 ---
@@ -164,18 +132,3 @@ Note : les algorithmes sans `class_weight` sont desavantages dans ce benchmark (
 - scikit-learn, XGBoost
 - SHAP, LIME, fairlearn
 - Jupyter Notebook
-
----
-
-## Troubleshooting
-
-| Probleme | Solution |
-|----------|----------|
-| `ModuleNotFoundError: No module named 'xgboost'` | Executer `pip install -r requirements.txt` dans l'environnement virtuel active |
-| `FileNotFoundError: data/raw/...` | Verifier que les 5 fichiers CSV sont dans `data/raw/`. Executer NB00 pour le diagnostic. |
-| Kernel Jupyter non trouve | `python -m ipykernel install --user --name humanforyou` |
-| NB01 tres lent (parsing badge) | Normal : `in_time.csv` et `out_time.csv` font 22 MB chacun. Compter ~30s. |
-| `MemoryError` sur les fichiers badge | Fermer les autres applications. Le parsing badge necessite ~500 MB de RAM. |
-| Erreur dans NB05 section SHAP | SHAP peut etre lent sur XGBoost. Patienter ou reduire `max_display`. |
-| `ImportError: No module named 'lime'` | `pip install lime` (optionnel, NB05 section 11 uniquement) |
-| Les outputs ne sont pas generes | Les notebooks doivent etre executes dans l'ordre 00 -> 05. Chaque notebook depend des outputs du precedent. |
