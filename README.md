@@ -11,7 +11,7 @@ Projet de Machine Learning visant a predire le depart volontaire des employes de
 
 ```bash
 # 1. Cloner et entrer dans le projet
-git clone <url-du-repo> && cd HumanForYou
+git clone https://github.com/aymen-elo/Human-For-You.git && cd Human-For-You
 
 # 2. Installer l'environnement
 # Windows :
@@ -19,7 +19,8 @@ setup.bat
 # Linux / macOS :
 chmod +x setup.sh && ./setup.sh
 
-# 3. Lancer Jupyter et executer les notebooks dans l'ordre (00 -> 05)
+# 3. Activer l'environnement et lancer Jupyter et executer les notebooks dans l'ordre (00 -> 05)
+.venv\Scripts\activate
 jupyter notebook notebooks/
 ```
 
@@ -38,7 +39,7 @@ jupyter notebook notebooks/
 ## Structure du projet
 
 ```
-HumanForYou/
+Human-For-You/
 |-- data/
 |   |-- raw/                              # Donnees brutes (immuables)
 |   |   |-- general_data.csv              # Donnees RH (age, salaire, poste...)
